@@ -4,6 +4,7 @@ using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Data.Common;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -17,6 +18,7 @@ namespace Chess
     {
         public static BoardField[] Grid { get; set; } = new BoardField[64];
         static Stack<BoardField[]> History { get; set; } = new();
+        static Stack<string> StatusHistory { get; set; } = new();
         static Stack<PartyEnum> SideTurnHistory { get; set; } = new();
         private PartyEnum _turn = PartyEnum.White;
         public PartyEnum Turn
@@ -51,7 +53,7 @@ namespace Chess
 
         public Board()
         {
-            StepBackCommand = new RelayCommand(StepBack);
+            StepBackCommand = new RelayCommand(StepBackAboba);
             for (int i = 0; i < 8; i++)
             {
                 for (int j = 0; j < 8; j++)
@@ -90,7 +92,7 @@ namespace Chess
             Grid[60].Occupant = new King(PartyEnum.Black);
             Grid[60].Occupant = new King(PartyEnum.White);
         }
-        public static void SaveState(PartyEnum Turn)
+        public static void SaveState(PartyEnum Turn, string status)
         {
             BoardField[] toSave = new BoardField[64];
             for (int i = 0; i < toSave.Length; i++)
@@ -99,12 +101,16 @@ namespace Chess
             }
             History.Push(toSave);
             SideTurnHistory.Push(Turn);
+            StatusHistory.Push(status);
         }
 
         public ICommand StepBackCommand { get; }
 
-
-        public void StepBack()
+        private void StepBackAboba()
+        {
+            StepBack(true);
+        }
+        public void StepBack(bool manual = false)
         {
             if(History.Count == 0)
             {
@@ -115,8 +121,16 @@ namespace Chess
             for (int i = 0;i < newGrid.Length; i++)
             {
                 Grid[i].Occupant = oldGrid[i].Occupant;
+                if (manual)
+                {
+                    BoardField.toMove = null;
+                    BoardField.fromMove = null;
+                    Grid[i].BackgroundColor = (oldGrid[i].Row + oldGrid[i].Column) % 2 == 0 ? "White" : "Gray";
+                    PieceSelected = false;
+                }
             }
             Turn = SideTurnHistory.Pop();
+            Status = StatusHistory.Pop();
             OnPropertyChanged(nameof(Grid));
         }
 

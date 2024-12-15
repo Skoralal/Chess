@@ -11,8 +11,8 @@ namespace Chess
 {
     internal class BoardField : INotifyPropertyChanged, ICloneable
     {
-        static ChessPiece? toMove = null;
-        static BoardField? fromMove = null;
+        public static ChessPiece? toMove = null;
+        public static BoardField? fromMove = null;
         public static List<int> Highlighted = new();
         public int Row { get; set; }
         public int Column { get; set; }
@@ -76,7 +76,7 @@ namespace Chess
             {
                 if (field < 0 || field > 63) continue;
 
-                Board.SaveState(board.Turn);
+                Board.SaveState(board.Turn, board.Status);
                 Board.Grid[field].Occupant = this.Occupant;
                 this.Occupant = null;
                 if (board.IAmChecked(board.Turn))
@@ -136,7 +136,7 @@ namespace Chess
                 {
                     return;
                 }
-                Board.SaveState(board.Turn);
+                Board.SaveState(board.Turn, board.Status);
 
                 fromMove.BackgroundColor = (fromMove.Row + fromMove.Column) % 2 == 0 ? "White" : "Gray";
                 if (Occupant != null)
