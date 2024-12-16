@@ -44,6 +44,13 @@
 
             <!-- Step Back Button -->
             <Button Content="Step Back" Command="{Binding StepBackCommand}" />
+            <Button Content="Short Castling" 
+                    Command="{Binding ShortCastlingCommand}" 
+                    Visibility="{Binding ShortCastingAvailable, Converter={StaticResource BoolToVisibilityConverter}}" />
+            <Button Content="Long Castling" 
+                    Command="{Binding LongCastlingCommand}" 
+                    Visibility="{Binding LongCastingAvailable, Converter={StaticResource BoolToVisibilityConverter}}" />
+
         </StackPanel>
     </Grid>
 </Window>

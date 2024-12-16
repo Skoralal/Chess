@@ -16,6 +16,26 @@ namespace Chess
 {
     internal class Board : INotifyPropertyChanged
     {
+        private bool _shortCastlingAvailable;
+        private bool _longCastlingAvailable;
+        public bool ShortCastingAvailable
+        {
+            get { return _shortCastlingAvailable; }
+            set
+            {
+                _shortCastlingAvailable = value;
+                OnPropertyChanged(nameof(ShortCastingAvailable));
+            }
+        }
+        public bool LongCastingAvailable
+        {
+            get { return _longCastlingAvailable; }
+            set
+            {
+                _longCastlingAvailable = value;
+                OnPropertyChanged(nameof(LongCastingAvailable));
+            }
+        }
         public static BoardField[] Grid { get; set; } = new BoardField[64];
         static Stack<BoardField[]> History { get; set; } = new();
         static Stack<string> StatusHistory { get; set; } = new();
@@ -54,6 +74,8 @@ namespace Chess
         public Board()
         {
             StepBackCommand = new RelayCommand(StepBackAboba);
+            ShortCastlingCommand = new RelayCommand(ShortCastling);
+            LongCastlingCommand = new RelayCommand(LongCastling);
             for (int i = 0; i < 8; i++)
             {
                 for (int j = 0; j < 8; j++)
@@ -105,10 +127,57 @@ namespace Chess
         }
 
         public ICommand StepBackCommand { get; }
+        public ICommand ShortCastlingCommand { get; }
+        public ICommand LongCastlingCommand { get; }
 
         private void StepBackAboba()
         {
             StepBack(true);
+        }
+        private void ShortCastling()
+        {
+            SaveState(Turn, Status);
+            if(Turn== PartyEnum.Black)
+            {
+                Grid[6].Occupant = Grid[4].Occupant;
+                Grid[4].Occupant = null;
+                Grid[5].Occupant = Grid[7].Occupant;
+                Grid[7].Occupant = null;
+                Turn = PartyEnum.White;
+            }
+            else
+            {
+                Grid[62].Occupant = Grid[60].Occupant;
+                Grid[60].Occupant = null;
+                Grid[61].Occupant = Grid[63].Occupant;
+                Grid[63].Occupant = null;
+                Turn = PartyEnum.Black;
+            }
+            ShortCastingAvailable = false;
+            CastlingCheck();
+
+        }
+        private void LongCastling()
+        {
+            SaveState(Turn, Status);
+            if (Turn == PartyEnum.Black)
+            {
+                Grid[2].Occupant = Grid[4].Occupant;
+                Grid[4].Occupant = null;
+                Grid[3].Occupant = Grid[0].Occupant;
+                Grid[0].Occupant = null;
+                Turn = PartyEnum.White;
+            }
+            else
+            {
+                Grid[58].Occupant = Grid[60].Occupant;
+                Grid[60].Occupant = null;
+                Grid[59].Occupant = Grid[56].Occupant;
+                Grid[56].Occupant = null;
+                Turn = PartyEnum.Black;
+            }
+            LongCastingAvailable = false;
+            CastlingCheck();
         }
         public void StepBack(bool manual = false)
         {
@@ -131,6 +200,7 @@ namespace Chess
             }
             Turn = SideTurnHistory.Pop();
             Status = StatusHistory.Pop();
+            CastlingCheck();
             OnPropertyChanged(nameof(Grid));
         }
 
@@ -166,9 +236,126 @@ namespace Chess
             }
             return false;
         }
+        private void CastlingCheck()
+        {
+            if (Turn == PartyEnum.White)
+            {
+                ShortCastingAvailable = false;
+                LongCastingAvailable = false;
+                if (!IAmChecked(PartyEnum.White))
+                {
+                    if (Grid[60].Occupant?.Untouched == true)
+                    {
+                        if (Grid[56].Occupant?.Untouched == true)
+                        {
+                            if (Grid[57].Occupant == null && Grid[58].Occupant == null && Grid[59].Occupant == null)
+                            {
+                                Grid[58].Occupant = Grid[60].Occupant;
+                                Grid[60].Occupant = null;
+                                if (!IAmChecked(PartyEnum.White))
+                                {
+                                    LongCastingAvailable = true;
+                                }
+                                else
+                                {
+                                    LongCastingAvailable = false;
+                                }
+                                Grid[60].Occupant = Grid[58].Occupant;
+                                Grid[58].Occupant = null;
+                            }
+                            else LongCastingAvailable = false ;
+                        }
+                        else LongCastingAvailable = false;
+                        if (Grid[63].Occupant?.Untouched == true)
+                        {
+                            if (Grid[61].Occupant == null && Grid[62].Occupant == null)
+                            {
+                                Grid[62].Occupant = Grid[60].Occupant;
+                                Grid[60].Occupant= null;
+                                if (!IAmChecked(PartyEnum.White))
+                                {
+                                    ShortCastingAvailable = true;
+                                }
+                                else
+                                {
+                                    ShortCastingAvailable = false;
+                                }
+                                Grid[60].Occupant = Grid[62].Occupant;
+                                Grid[62].Occupant = null;
+                            }
 
+                        }
+                    }
+                }
+            }
+            
+            else
+            {
+                ShortCastingAvailable = false;
+                LongCastingAvailable = false;
+                if (!IAmChecked(PartyEnum.Black))
+                {
+                    if (Grid[4].Occupant?.Untouched == true)
+                    {
+                        if (Grid[0].Occupant?.Untouched == true)
+                        {
+                            if (Grid[1].Occupant == null && Grid[2].Occupant == null && Grid[3].Occupant == null)
+                            {
+                                Grid[2].Occupant = Grid[4].Occupant;
+                                Grid[4].Occupant = null;
+                                if (!IAmChecked(PartyEnum.Black))
+                                {
+                                    LongCastingAvailable = true;
+                                }
+                                else
+                                {
+                                    LongCastingAvailable = false;
+                                }
+                                Grid[4].Occupant = Grid[2].Occupant;
+                                Grid[2].Occupant = null;
+                            }
+                        }
+                        //Grid[6].Occupant = Grid[4].Occupant;
+                        //Grid[4].Occupant = null;
+                        //Grid[5].Occupant = Grid[7].Occupant;
+                        //Grid[7].Occupant = null;
+                        if (Grid[7].Occupant?.Untouched == true)
+                        {
+                            if (Grid[5].Occupant == null && Grid[6].Occupant == null)
+                            {
+                                Grid[6].Occupant = Grid[4].Occupant;
+                                Grid[4].Occupant = null;
+                                if (!IAmChecked(PartyEnum.Black))
+                                {
+                                    ShortCastingAvailable = true;
+                                }
+                                else
+                                {
+                                    ShortCastingAvailable = false;
+                                }
+                                Grid[4].Occupant = Grid[6].Occupant;
+                                Grid[6].Occupant = null;
+                            }
+                        }
+                    }
+                }
+            }
+        }
         public void StateCheck()//invoke after party changed
         {
+            CastlingCheck();
+            foreach (BoardField field in Grid.Where(x=>x.Occupant != null && x.Occupant is Pawn))
+            {
+                Pawn pawn = field.Occupant as Pawn;
+                if(pawn.Party == PartyEnum.White && field.Row == 0)
+                {
+                    field.Occupant = new Queen(PartyEnum.White);
+                }
+                else if (pawn.Party == PartyEnum.Black && field.Row == 7)
+                {
+                    field.Occupant = new Queen(PartyEnum.Black);
+                }
+            }
             if (IAmChecked(Turn))
             {
                 if (IAmCheckMated(Turn))
